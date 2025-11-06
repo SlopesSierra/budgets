@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 3000
 
 # Start the app
-command: sh -c "npm install && npm start"
+CMD ["npm", "start"]
