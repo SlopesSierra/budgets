@@ -16,4 +16,4 @@ services:
       - CHOKIDAR_USEPOLLING=true
     stdin_open: true
     tty: true
-    command: npm start
+    command: sh -c "cd /app && npm install && npm start"
