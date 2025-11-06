@@ -1,8 +1,7 @@
 # docker-compose.yml
 version: '3.8'
-
 services:
-  budget-app:
+  budgetapp:
     image: node:18-alpine  
     build:
       context: .
