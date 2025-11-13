@@ -1,5 +1,5 @@
-# docker-compose.yml
-version: '3.8'
+version: "3.8"
+
 services:
   budgets:
     build:
@@ -12,7 +12,7 @@ services:
       - ./public:/app/public
       - ./package.json:/app/package.json
     environment:
-      - NODE_ENV=development
-      - CHOKIDAR_USEPOLLING=true
+      NODE_ENV: development
+      CHOKIDAR_USEPOLLING: "true"
     stdin_open: true
     tty: true
