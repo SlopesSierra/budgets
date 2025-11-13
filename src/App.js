@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { DollarSign, Calendar, TrendingUp, Plus, Trash2, Moon, Sun, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { DollarSign, Calendar, TrendingUp, Plus, Trash2, Moon, Sun, AlertCircle, CheckCircle, Clock, CreditCard, Percent, TrendingDown } from 'lucide-react';
 
 const BiWeeklyBudget = () => {
   // Load from localStorage or use defaults
@@ -40,6 +40,20 @@ const BiWeeklyBudget = () => {
       { id: 14, dueDate: '2025-11-30', name: '💳 MACU Credit Card', category: 'Credit Card', amount: 150, status: 'Pending' },
     ];
   });
+
+  const [creditCards, setCreditCards] = useState(() => {
+    const saved = localStorage.getItem('creditCards');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    return [
+      { id: 1, name: '💳 Apple Card', balance: 6477.71, creditLimit: 10000, apr: 25.99, minPayment: 150, dueDate: '2025-12-01' },
+      { id: 2, name: '💳 Citi Card', balance: 2881.36, creditLimit: 5000, apr: 27.99, minPayment: 70, dueDate: '2025-11-16' },
+      { id: 3, name: '💳 USB Credit Card', balance: 3841.51, creditLimit: 8000, apr: 27.99, minPayment: 243, dueDate: '2025-11-23' },
+      { id: 4, name: '💳 MACU Credit Card', balance: 5935.08, creditLimit: 10000, apr: 12.99, minPayment: 150, dueDate: '2025-11-30' },
+      { id: 5, name: '💳 Amazon Credit Card', balance: 0, creditLimit: 3000, apr: 27.99, minPayment: 0, dueDate: '2025-11-14' },
+    ];
+  });
   
   const [activeTab, setActiveTab] = useState(() => {
     const saved = localStorage.getItem('activeTab');
@@ -62,6 +76,10 @@ const BiWeeklyBudget = () => {
   useEffect(() => {
     localStorage.setItem('bills', JSON.stringify(bills));
   }, [bills]);
+
+  useEffect(() => {
+    localStorage.setItem('creditCards', JSON.stringify(creditCards));
+  }, [creditCards]);
 
   useEffect(() => {
     localStorage.setItem('activeTab', activeTab);
@@ -128,6 +146,23 @@ const BiWeeklyBudget = () => {
     };
   }, [bills, billsWithAllocation, availableBalance, today]);
 
+  const creditCardStats = useMemo(() => {
+    const totalDebt = creditCards.reduce((sum, card) => sum + card.balance, 0);
+    const totalCreditLimit = creditCards.reduce((sum, card) => sum + card.creditLimit, 0);
+    const totalMinPayments = creditCards.reduce((sum, card) => sum + card.minPayment, 0);
+    const utilizationRate = totalCreditLimit > 0 ? (totalDebt / totalCreditLimit) * 100 : 0;
+    const weightedAPR = creditCards.reduce((sum, card) => sum + (card.apr * card.balance), 0) / totalDebt || 0;
+    
+    return {
+      totalDebt,
+      totalCreditLimit,
+      totalMinPayments,
+      utilizationRate,
+      weightedAPR,
+      availableCredit: totalCreditLimit - totalDebt
+    };
+  }, [creditCards]);
+
   const addBill = () => {
     if (bills.length >= 20) {
       alert('Maximum 20 bills reached');
@@ -144,9 +179,32 @@ const BiWeeklyBudget = () => {
     setBills([...bills, newBill]);
   };
 
+  const addCreditCard = () => {
+    if (creditCards.length >= 10) {
+      alert('Maximum 10 credit cards reached');
+      return;
+    }
+    const newCard = {
+      id: Date.now(),
+      name: 'New Credit Card',
+      balance: 0,
+      creditLimit: 1000,
+      apr: 18.00,
+      minPayment: 0,
+      dueDate: today
+    };
+    setCreditCards([...creditCards, newCard]);
+  };
+
   const deleteBill = (id) => {
     if (window.confirm('Are you sure you want to delete this bill?')) {
       setBills(bills.filter(b => b.id !== id));
+    }
+  };
+
+  const deleteCreditCard = (id) => {
+    if (window.confirm('Are you sure you want to delete this credit card?')) {
+      setCreditCards(creditCards.filter(c => c.id !== id));
     }
   };
 
@@ -154,7 +212,15 @@ const BiWeeklyBudget = () => {
     setBills(bills.map(b => b.id === id ? { ...b, [field]: value } : b));
   };
 
+  const updateCreditCard = (id, field, value) => {
+    setCreditCards(creditCards.map(c => c.id === id ? { ...c, [field]: value } : c));
+  };
+
   const sortedBills = [...billsWithAllocation].sort((a, b) => 
+    new Date(a.dueDate) - new Date(b.dueDate)
+  );
+
+  const sortedCreditCards = [...creditCards].sort((a, b) => 
     new Date(a.dueDate) - new Date(b.dueDate)
   );
 
@@ -184,7 +250,7 @@ const BiWeeklyBudget = () => {
               💰 Bi-Weekly Budget Tracker
             </h1>
             <p className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
-              Smart bill allocation based on due dates
+              Smart bill allocation & credit card tracking
             </p>
           </div>
           <button
@@ -201,7 +267,7 @@ const BiWeeklyBudget = () => {
         </header>
 
         {/* Alert Section */}
-        {(dashboardStats.overdueBills.length > 0 || dashboardStats.dueSoonBills.length > 0) && (
+        {(dashboardStats.overdueBills.length > 0 || dashboardStats.dueSoonBills.length > 0 || creditCardStats.utilizationRate > 80) && (
           <div className="mb-6 space-y-2">
             {dashboardStats.overdueBills.length > 0 && (
               <div className="bg-red-500 bg-opacity-10 border border-red-500 rounded-xl p-4 flex items-start gap-3">
@@ -229,6 +295,19 @@ const BiWeeklyBudget = () => {
                 </div>
               </div>
             )}
+            {creditCardStats.utilizationRate > 80 && (
+              <div className={`${darkMode ? 'bg-orange-500 bg-opacity-10 border-orange-500' : 'bg-orange-100 border-orange-400'} border rounded-xl p-4 flex items-start gap-3`}>
+                <TrendingUp className={darkMode ? 'text-orange-400' : 'text-orange-600'} size={20} />
+                <div>
+                  <p className={`font-semibold ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>
+                    High Credit Utilization ({creditCardStats.utilizationRate.toFixed(1)}%)
+                  </p>
+                  <p className={`text-sm ${darkMode ? 'text-orange-300' : 'text-orange-600'}`}>
+                    Consider paying down your credit cards to improve your credit score
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -238,48 +317,6 @@ const BiWeeklyBudget = () => {
             onClick={() => setActiveTab('dashboard')}
             className={`px-4 md:px-6 py-2 rounded-xl font-medium transition-all ${
               activeTab === 'dashboard' 
-                ? darkMode 
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/50' 
-                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-300'
-                : darkMode
-                  ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 shadow-sm'
-            }`}
-          >
-            Dashboard
-          </button>
-          <button
-            onClick={() => setActiveTab('bills')}
-            className={`px-4 md:px-6 py-2 rounded-xl font-medium transition-all ${
-              activeTab === 'bills' 
-                ? darkMode 
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/50' 
-                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-300'
-                : darkMode
-                  ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 shadow-sm'
-            }`}
-          >
-            Bills List
-          </button>
-          <button
-            onClick={() => setActiveTab('calendar')}
-            className={`px-4 md:px-6 py-2 rounded-xl font-medium transition-all ${
-              activeTab === 'calendar' 
-                ? darkMode 
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/50' 
-                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-300'
-                : darkMode
-                  ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 shadow-sm'
-            }`}
-          >
-            Calendar
-          </button>
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`px-4 md:px-6 py-2 rounded-xl font-medium transition-all ${
-              activeTab === 'analytics' 
                 ? darkMode 
                   ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/50' 
                   : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-300'
@@ -394,20 +431,61 @@ const BiWeeklyBudget = () => {
               </div>
 
               <div className={`rounded-xl shadow-lg p-6 backdrop-blur-sm ${
-                darkMode ? 'bg-slate-800/80 border border-slate-700' : 'bg-white/90 border border-teal-100'
+                darkMode ? 'bg-slate-800/80 border border-slate-700' : 'bg-white/90 border border-red-100'
               }`}>
                 <div className="flex items-center gap-3 mb-2">
-                  <CheckCircle className="text-teal-500" size={20} />
+                  <CreditCard className="text-red-500" size={20} />
                   <h3 className={`text-sm font-medium ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                    Bills Paid
+                    CC Debt
                   </h3>
                 </div>
                 <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                  {dashboardStats.paidCount}
+                  ${creditCardStats.totalDebt.toFixed(2)}
                 </p>
                 <p className={`text-xs mt-1 ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                  of {bills.length} total bills
+                  Min payment: ${creditCardStats.totalMinPayments}/mo
                 </p>
+              </div>
+            </div>
+
+            {/* Credit Card Summary */}
+            <div className={`rounded-xl shadow-lg p-6 backdrop-blur-sm ${
+              darkMode ? 'bg-slate-800/80 border border-slate-700' : 'bg-white/90 border border-slate-200'
+            }`}>
+              <h3 className={`text-xl font-semibold mb-4 ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                💳 Credit Card Overview
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
+                  <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Utilization Rate</p>
+                  <p className={`text-2xl font-bold ${
+                    creditCardStats.utilizationRate > 80 ? 'text-red-600' :
+                    creditCardStats.utilizationRate > 50 ? 'text-amber-600' : 'text-emerald-600'
+                  }`}>
+                    {creditCardStats.utilizationRate.toFixed(1)}%
+                  </p>
+                  <div className={`w-full h-2 rounded-full mt-2 overflow-hidden ${darkMode ? 'bg-slate-600' : 'bg-slate-200'}`}>
+                    <div 
+                      className={`h-full transition-all ${
+                        creditCardStats.utilizationRate > 80 ? 'bg-red-500' :
+                        creditCardStats.utilizationRate > 50 ? 'bg-amber-500' : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${Math.min(creditCardStats.utilizationRate, 100)}%` }}
+                    />
+                  </div>
+                </div>
+                <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
+                  <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Weighted APR</p>
+                  <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                    {creditCardStats.weightedAPR.toFixed(2)}%
+                  </p>
+                </div>
+                <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
+                  <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Available Credit</p>
+                  <p className={`text-2xl font-bold text-emerald-600`}>
+                    ${creditCardStats.availableCredit.toFixed(2)}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -451,369 +529,60 @@ const BiWeeklyBudget = () => {
               </div>
             </div>
           </div>
-        )}
-
-        {/* Bills List Tab */}
-        {activeTab === 'bills' && (
-          <div className={`rounded-xl shadow-lg p-4 md:p-6 backdrop-blur-sm ${
-            darkMode ? 'bg-slate-800/80 border border-slate-700' : 'bg-white/90 border border-slate-200'
-          }`}>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                📋 Bills Management
-              </h2>
-              <button
-                onClick={addBill}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
-                  darkMode 
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/50' 
-                    : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-300'
-                }`}
-                disabled={bills.length >= 20}
-              >
-                <Plus size={20} />
-                Add Bill ({bills.length}/20)
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className={`border-b-2 ${darkMode ? 'border-slate-700' : 'border-slate-200'}`}>
-                    <th className={`text-left p-3 font-semibold text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                      Due Date
-                    </th>
-                    <th className={`text-left p-3 font-semibold text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                      Bill Name
-                    </th>
-                    <th className={`text-left p-3 font-semibold text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                      Category
-                    </th>
-                    <th className={`text-right p-3 font-semibold text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                      Amount
-                    </th>
-                    <th className={`text-left p-3 font-semibold text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                      Status
-                    </th>
-                    <th className={`text-right p-3 font-semibold text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                      Days
-                    </th>
-                    <th className={`text-right p-3 font-semibold text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                      Alloc %
-                    </th>
-                    <th className={`text-right p-3 font-semibold text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                      Allocated $
-                    </th>
-                    <th className={`text-center p-3 font-semibold text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                      Delete
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedBills.map(bill => (
-                    <tr key={bill.id} className={`border-b transition-colors ${
-                      darkMode 
-                        ? 'border-slate-700 hover:bg-slate-700/50' 
-                        : 'border-slate-100 hover:bg-slate-50'
-                    }`}>
-                      <td className="p-3">
-                        <input
-                          type="date"
-                          value={bill.dueDate}
-                          onChange={(e) => updateBill(bill.id, 'dueDate', e.target.value)}
-                          className={`border rounded-lg px-2 py-1 text-sm ${
-                            darkMode 
-                              ? 'bg-slate-700 text-white border-slate-600' 
-                              : 'bg-white text-slate-800 border-slate-300'
-                          }`}
-                        />
-                      </td>
-                      <td className="p-3">
-                        <input
-                          type="text"
-                          value={bill.name}
-                          onChange={(e) => updateBill(bill.id, 'name', e.target.value)}
-                          className={`border rounded-lg px-2 py-1 w-full text-sm ${
-                            darkMode 
-                              ? 'bg-slate-700 text-white border-slate-600' 
-                              : 'bg-white text-slate-800 border-slate-300'
-                          }`}
-                        />
-                      </td>
-                      <td className="p-3">
-                        <input
-                          type="text"
-                          value={bill.category}
-                          onChange={(e) => updateBill(bill.id, 'category', e.target.value)}
-                          className={`border rounded-lg px-2 py-1 w-full text-sm ${
-                            darkMode 
-                              ? 'bg-slate-700 text-white border-slate-600' 
-                              : 'bg-white text-slate-800 border-slate-300'
-                          }`}
-                        />
-                      </td>
-                      <td className="p-3 text-right">
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={bill.amount}
-                          onChange={(e) => updateBill(bill.id, 'amount', Number(e.target.value))}
-                          className={`border rounded-lg px-2 py-1 w-24 text-sm text-right ${
-                            darkMode 
-                              ? 'bg-slate-700 text-white border-slate-600' 
-                              : 'bg-white text-slate-800 border-slate-300'
-                          }`}
-                        />
-                      </td>
-                      <td className="p-3">
-                        <select
-                          value={bill.status}
-                          onChange={(e) => updateBill(bill.id, 'status', e.target.value)}
-                          className={`border rounded-lg px-2 py-1 text-sm ${
-                            darkMode 
-                              ? 'bg-slate-700 text-white border-slate-600' 
-                              : 'bg-white text-slate-800 border-slate-300'
-                          }`}
-                        >
-                          <option>Pending</option>
-                          <option>Paid</option>
-                        </select>
-                      </td>
-                      <td className={`p-3 text-right text-sm font-medium ${
-                        bill.daysUntilDue === 0 ? 'text-rose-500' :
-                        bill.daysUntilDue <= 3 ? 'text-amber-500' :
-                        darkMode ? 'text-slate-300' : 'text-slate-800'
-                      }`}>
-                        {bill.daysUntilDue}
-                      </td>
-                      <td className="p-3 text-right text-sm font-medium text-emerald-600">
-                        {bill.allocationPercent.toFixed(1)}%
-                      </td>
-                      <td className="p-3 text-right text-sm font-semibold text-teal-600">
-                        ${bill.allocatedAmount.toFixed(2)}
-                      </td>
-                      <td className="p-3 text-center">
-                        <button
-                          onClick={() => deleteBill(bill.id)}
-                          className="text-rose-600 hover:text-rose-800 transition"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Calendar Tab */}
-        {activeTab === 'calendar' && (
-          <div className={`rounded-xl shadow-lg p-6 backdrop-blur-sm ${
-            darkMode ? 'bg-slate-800/80 border border-slate-700' : 'bg-white/90 border border-slate-200'
-          }`}>
-            <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-              📅 Calendar View
-            </h2>
-            <div className="space-y-3">
-              {sortedBills.map(bill => (
-                <div key={bill.id} className={`flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl border-l-4 transition-all hover:scale-[1.01] ${
-                  bill.status === 'Paid' ? 'border-teal-500' : 
-                  bill.daysUntilDue === 0 ? 'border-rose-500' :
-                  bill.daysUntilDue <= 3 ? 'border-amber-500' : 'border-emerald-500'
-                } ${
-                  darkMode ? 'bg-slate-700/50' : 'bg-slate-50'
-                }`}>
-                  <div className={`px-4 py-3 rounded-xl text-center min-w-[80px] ${
-                    bill.status === 'Paid' ? 'bg-teal-100' :
-                    bill.daysUntilDue === 0 ? 'bg-rose-100' :
-                    bill.daysUntilDue <= 3 ? 'bg-amber-100' : 'bg-emerald-100'
-                  }`}>
-                    <p className={`text-xs font-medium ${
-                      bill.status === 'Paid' ? 'text-teal-600' :
-                      bill.daysUntilDue === 0 ? 'text-rose-600' :
-                      bill.daysUntilDue <= 3 ? 'text-amber-600' : 'text-emerald-600'
-                    }`}>
-                      {new Date(bill.dueDate).toLocaleDateString('en-US', { month: 'short' })}
-                    </p>
-                    <p className={`text-2xl font-bold ${
-                      bill.status === 'Paid' ? 'text-teal-600' :
-                      bill.daysUntilDue === 0 ? 'text-rose-600' :
-                      bill.daysUntilDue <= 3 ? 'text-amber-600' : 'text-emerald-600'
-                    }`}>
-                      {new Date(bill.dueDate).getDate()}
-                    </p>
-                  </div>
-                  <div className="flex-1">
-                    <p className={`font-semibold text-lg ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                      {bill.name}
-                    </p>
-                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                      {bill.category} • {bill.daysUntilDue === 0 ? 'Due Today' : `${bill.daysUntilDue} days`}
-                    </p>
-                  </div>
-                  <div className="text-left sm:text-right w-full sm:w-auto">
-                    <p className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                      ${bill.amount.toFixed(2)}
-                    </p>
-                    <p className={`text-sm font-medium ${bill.status === 'Paid' ? 'text-teal-600' : 'text-amber-600'}`}>
-                      {bill.status}
-                    </p>
-                  </div>
-                  {bill.status === 'Pending' && (
-                    <div className="text-left sm:text-right w-full sm:w-auto min-w-[100px]">
-                      <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                        Reserve Now
-                      </p>
-                      <p className="font-semibold text-emerald-600">${bill.allocatedAmount.toFixed(2)}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Analytics Tab */}
-        {activeTab === 'analytics' && (
-          <div className="space-y-6">
-            <div className={`rounded-xl shadow-lg p-6 backdrop-blur-sm ${
-              darkMode ? 'bg-slate-800/80 border border-slate-700' : 'bg-white/90 border border-slate-200'
-            }`}>
-              <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                📊 Spending by Category
-              </h2>
-              <div className="space-y-4">
-                {categoryTotals.map(([category, total]) => {
-                  const percentage = (total / dashboardStats.totalBills) * 100;
-                  return (
-                    <div key={category}>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className={`font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                          {category}
-                        </span>
-                        <span className={`font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                          ${total.toFixed(2)} ({percentage.toFixed(1)}%)
-                        </span>
-                      </div>
-                      <div className={`w-full h-3 rounded-full overflow-hidden ${
-                        darkMode ? 'bg-slate-700' : 'bg-slate-200'
-                      }`}>
-                        <div 
-                          className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className={`rounded-xl shadow-lg p-6 backdrop-blur-sm ${
-                darkMode ? 'bg-slate-800/80 border border-slate-700' : 'bg-white/90 border border-slate-200'
-              }`}>
-                <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                  📈 Budget Health
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
-                      Available Balance
-                    </span>
-                    <span className={`font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                      ${availableBalance.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
-                      Total Bills
-                    </span>
-                    <span className={`font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                      ${dashboardStats.totalBills.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center pt-3 border-t border-slate-600">
-                    <span className={`font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                      Surplus/Deficit
-                    </span>
-                    <span className={`font-bold text-lg ${
-                      availableBalance - dashboardStats.totalBills >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                    }`}>
-                      ${(availableBalance - dashboardStats.totalBills).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className={`rounded-xl shadow-lg p-6 backdrop-blur-sm ${
-                darkMode ? 'bg-slate-800/80 border border-slate-700' : 'bg-white/90 border border-slate-200'
-              }`}>
-                <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                  ⏱️ Payment Timeline
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
-                      Overdue Bills
-                    </span>
-                    <span className={`font-bold ${dashboardStats.overdueBills.length > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                      {dashboardStats.overdueBills.length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
-                      Due Soon (≤3 days)
-                    </span>
-                    <span className={`font-bold ${dashboardStats.dueSoonBills.length > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                      {dashboardStats.dueSoonBills.length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
-                      Pending Bills
-                    </span>
-                    <span className={`font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                      {dashboardStats.pendingCount}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
-                      Paid Bills
-                    </span>
-                    <span className="font-bold text-teal-600">
-                      {dashboardStats.paidCount}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className={`rounded-xl shadow-lg p-6 backdrop-blur-sm ${
-              darkMode ? 'bg-slate-800/80 border border-slate-700' : 'bg-white/90 border border-slate-200'
-            }`}>
-              <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                💡 How Allocation Works
-              </h3>
-              <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-emerald-50'}`}>
-                <p className={`mb-3 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                  This budget tracker uses a <strong>weighted allocation system</strong> that prioritizes bills based on how soon they're due:
-                </p>
-                <ul className={`list-disc list-inside space-y-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                  <li>Bills due sooner receive a higher allocation percentage</li>
-                  <li>The formula: weight = 1 / (days until due + 1)</li>
-                  <li>Your available balance is distributed proportionally</li>
-                  <li>This ensures you always reserve enough for urgent bills</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default BiWeeklyBudget;
+        )} shadow-lg shadow-emerald-300'
+                : darkMode
+                  ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 shadow-sm'
+            }`}
+          >
+            Dashboard
+          </button>
+          <button
+            onClick={() => setActiveTab('bills')}
+            className={`px-4 md:px-6 py-2 rounded-xl font-medium transition-all ${
+              activeTab === 'bills' 
+                ? darkMode 
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/50' 
+                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-300'
+                : darkMode
+                  ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 shadow-sm'
+            }`}
+          >
+            Bills List
+          </button>
+          <button
+            onClick={() => setActiveTab('creditcards')}
+            className={`px-4 md:px-6 py-2 rounded-xl font-medium transition-all ${
+              activeTab === 'creditcards' 
+                ? darkMode 
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/50' 
+                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-300'
+                : darkMode
+                  ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 shadow-sm'
+            }`}
+          >
+            Credit Cards
+          </button>
+          <button
+            onClick={() => setActiveTab('calendar')}
+            className={`px-4 md:px-6 py-2 rounded-xl font-medium transition-all ${
+              activeTab === 'calendar' 
+                ? darkMode 
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/50' 
+                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-300'
+                : darkMode
+                  ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 shadow-sm'
+            }`}
+          >
+            Calendar
+          </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`px-4 md:px-6 py-2 rounded-xl font-medium transition-all ${
+              activeTab === 'analytics' 
+                ? darkMode 
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/50' 
+                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white

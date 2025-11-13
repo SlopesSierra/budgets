@@ -2,7 +2,6 @@
 version: '3.8'
 services:
   budgetapp:
-    image: node:18-alpine  
     build:
       context: .
       dockerfile: Dockerfile
@@ -11,9 +10,9 @@ services:
     volumes:
       - ./src:/app/src
       - ./public:/app/public
+      - ./package.json:/app/package.json
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true
     stdin_open: true
     tty: true
-    command: sh -c "cd /app && npm install && npm start"
