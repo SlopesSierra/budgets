@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import logo from './assets/budgets-logo.png';
 import { DollarSign, Calendar, TrendingUp, Plus, Trash2, Moon, Sun, AlertCircle, CheckCircle, Clock, CreditCard, Percent, TrendingDown } from 'lucide-react';
 
 const BiWeeklyBudget = () => {
@@ -259,15 +260,18 @@ const BiWeeklyBudget = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <header className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className={`text-3xl md:text-4xl font-bold mb-2 ${
-              darkMode ? 'text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400' : 'text-slate-800'
-            }`}>
-              💰 Bi-Weekly Budgets
-            </h1>
-            <p className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
-              Smart bill allocation & credit card tracking
-            </p>
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="Logo" className="h-12 w-12 rounded-xl bg-white/10 p-2 shadow-sm" />
+            <div>
+              <h1 className={`text-3xl md:text-4xl font-bold mb-2 ${
+                darkMode ? 'text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400' : 'text-slate-800'
+              }`}>
+                💰 Bi-Weekly Budgets
+              </h1>
+              <p className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
+                Smart bill allocation & credit card tracking
+              </p>
+            </div>
           </div>
           <button
             onClick={() => setDarkMode(!darkMode)}
