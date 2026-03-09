@@ -7,10 +7,28 @@ const BiWeeklyBudget = () => {
     const saved = localStorage.getItem('availableBalance');
     return saved !== null ? Number(saved) : 0;
   });
+
+  const getNextBiWeeklyPayDate = (referenceDateStr) => {
+    const today = new Date();
+    const ref = new Date(referenceDateStr);
+
+    const normalize = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const todayNorm = normalize(today);
+    const refNorm = normalize(ref);
+
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const msPerBiWeek = 14 * msPerDay;
+
+    const diff = todayNorm - refNorm;
+    const cycle = diff <= 0 ? 0 : Math.ceil(diff / msPerBiWeek);
+    const next = new Date(refNorm.getTime() + cycle * msPerBiWeek);
+
+    return next.toISOString().split('T')[0];
+  };
   
   const [nextPayDate, setNextPayDate] = useState(() => {
     const saved = localStorage.getItem('nextPayDate');
-    return saved || '2025-11-15';
+    return saved || getNextBiWeeklyPayDate('2026-03-06');
   });
   
   const [darkMode, setDarkMode] = useState(() => {
