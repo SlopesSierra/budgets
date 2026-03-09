@@ -251,6 +251,28 @@ const BiWeeklyBudget = () => {
     return Object.entries(totals).sort((a, b) => b[1] - a[1]);
   }, [bills]);
 
+  const calendarMeta = useMemo(() => {
+    const start = new Date(today);
+    start.setDate(1);
+
+    const leadingEmpty = start.getDay();
+
+    const days = Array.from({ length: 30 }).map((_, i) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + i);
+      return date;
+    });
+
+    const billsByDate = sortedBills.reduce((acc, bill) => {
+      acc[bill.dueDate] = acc[bill.dueDate] ? [...acc[bill.dueDate], bill] : [bill];
+      return acc;
+    }, {});
+
+    return { start, leadingEmpty, days, billsByDate };
+  }, [today, sortedBills]);
+
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
   return (
     <div className={`min-h-screen p-4 md:p-6 transition-colors duration-300 ${
       darkMode 
@@ -1011,64 +1033,76 @@ const BiWeeklyBudget = () => {
           <div className={`rounded-xl shadow-lg p-6 backdrop-blur-sm ${
             darkMode ? 'bg-slate-800/80 border border-slate-700' : 'bg-white/90 border border-slate-200'
           }`}>
-            <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-              📅 Calendar View
-            </h2>
-            <div className="space-y-3">
-              {sortedBills.map(bill => (
-                <div key={bill.id} className={`flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl border-l-4 transition-all hover:scale-[1.01] ${
-                  bill.status === 'Paid' ? 'border-teal-500' : 
-                  bill.daysUntilDue === 0 ? 'border-rose-500' :
-                  bill.daysUntilDue <= 3 ? 'border-amber-500' : 'border-emerald-500'
-                } ${
-                  darkMode ? 'bg-slate-700/50' : 'bg-slate-50'
-                }`}>
-                  <div className={`px-4 py-3 rounded-xl text-center min-w-[80px] ${
-                    bill.status === 'Paid' ? 'bg-teal-100' :
-                    bill.daysUntilDue === 0 ? 'bg-rose-100' :
-                    bill.daysUntilDue <= 3 ? 'bg-amber-100' : 'bg-emerald-100'
-                  }`}>
-                    <p className={`text-xs font-medium ${
-                      bill.status === 'Paid' ? 'text-teal-600' :
-                      bill.daysUntilDue === 0 ? 'text-rose-600' :
-                      bill.daysUntilDue <= 3 ? 'text-amber-600' : 'text-emerald-600'
-                    }`}>
-                      {new Date(bill.dueDate).toLocaleDateString('en-US', { month: 'short' })}
-                    </p>
-                    <p className={`text-2xl font-bold ${
-                      bill.status === 'Paid' ? 'text-teal-600' :
-                      bill.daysUntilDue === 0 ? 'text-rose-600' :
-                      bill.daysUntilDue <= 3 ? 'text-amber-600' : 'text-emerald-600'
-                    }`}>
-                      {new Date(bill.dueDate).getDate()}
-                    </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                📅 Calendar View
+              </h2>
+              <div className={`text-sm ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                Showing 30 days from {calendarMeta.start.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <div className="grid grid-cols-7 gap-2 text-center mb-2">
+                {weekDays.map(day => (
+                  <div key={day} className={`text-xs font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                    {day}
                   </div>
-                  <div className="flex-1">
-                    <p className={`font-semibold text-lg ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                      {bill.name}
-                    </p>
-                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                      {bill.category} • {bill.daysUntilDue === 0 ? 'Due Today' : `${bill.daysUntilDue} days`}
-                    </p>
-                  </div>
-                  <div className="text-left sm:text-right w-full sm:w-auto">
-                    <p className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                      ${bill.amount.toFixed(2)}
-                    </p>
-                    <p className={`text-sm font-medium ${bill.status === 'Paid' ? 'text-teal-600' : 'text-amber-600'}`}>
-                      {bill.status}
-                    </p>
-                  </div>
-                  {bill.status === 'Pending' && (
-                    <div className="text-left sm:text-right w-full sm:w-auto min-w-[100px]">
-                      <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                        Reserve Now
-                      </p>
-                      <p className="font-semibold text-emerald-600">${bill.allocatedAmount.toFixed(2)}</p>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: calendarMeta.leadingEmpty }).map((_, idx) => (
+                  <div key={`blank-${idx}`} className="h-28 rounded-xl" />
+                ))}
+                {calendarMeta.days.map(day => {
+                  const dateKey = day.toISOString().split('T')[0];
+                  const dayBills = calendarMeta.billsByDate[dateKey] || [];
+                  const isToday = dateKey === today;
+                  return (
+                    <div
+                      key={dateKey}
+                      className={`h-28 p-2 rounded-xl border transition flex flex-col justify-between ${
+                        isToday ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30' :
+                        darkMode ? 'border-slate-700 bg-slate-700/50' : 'border-slate-200 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <span className={`text-sm font-semibold ${isToday ? 'text-emerald-700 dark:text-emerald-200' : darkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                          {day.getDate()}
+                        </span>
+                        {dayBills.length > 0 && (
+                          <span className="text-xs font-medium text-amber-500">
+                            {dayBills.length}
+                          </span>
+                        )}
+                      </div>
+                      <div className="space-y-1 text-xs overflow-hidden">
+                        {dayBills.slice(0, 3).map(bill => (
+                          <div
+                            key={bill.id}
+                            className={`truncate rounded-full px-2 py-0.5 ${
+                              bill.status === 'Paid'
+                                ? 'bg-teal-600 text-white'
+                                : bill.daysUntilDue === 0
+                                  ? 'bg-rose-500 text-white'
+                                  : bill.daysUntilDue <= 3
+                                    ? 'bg-amber-500 text-white'
+                                    : 'bg-emerald-500 text-white'
+                            }`}
+                          >
+                            {bill.name}
+                          </div>
+                        ))}
+                        {dayBills.length > 3 && (
+                          <div className={`text-[10px] ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                            +{dayBills.length - 3} more
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
