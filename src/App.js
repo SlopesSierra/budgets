@@ -233,9 +233,36 @@ const BiWeeklyBudget = () => {
     setCreditCards(creditCards.map(c => c.id === id ? { ...c, [field]: value } : c));
   };
 
-  const sortedBills = [...billsWithAllocation].sort((a, b) => 
-    new Date(a.dueDate) - new Date(b.dueDate)
-  );
+  const sortedBillsByDate = useMemo(() => {
+    return [...billsWithAllocation].sort((a, b) => 
+      new Date(a.dueDate) - new Date(b.dueDate)
+    );
+  }, [billsWithAllocation]);
+
+  const getBillGroup = (bill) => {
+    const cat = (bill.category || '').toLowerCase();
+    if (cat === 'utilities') return 'Utilities';
+    if (cat === 'entertainment') return 'Entertainment';
+    if (['credit card', 'creditcard', 'loan', 'debt'].includes(cat)) return 'Debt';
+    return 'Other';
+  };
+
+  const sortedBillsByGroup = useMemo(() => {
+    const groupOrder = ['Utilities', 'Entertainment', 'Debt', 'Other'];
+    const groups = groupOrder.reduce((acc, name) => ({ ...acc, [name]: [] }), {});
+
+    billsWithAllocation.forEach(bill => {
+      const groupName = getBillGroup(bill);
+      groups[groupName].push(bill);
+    });
+
+    return groupOrder
+      .map(groupName => ({
+        groupName,
+        bills: groups[groupName].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+      }))
+      .filter(group => group.bills.length > 0);
+  }, [billsWithAllocation]);
 
   const sortedCreditCards = [...creditCards].sort((a, b) => 
     new Date(a.dueDate) - new Date(b.dueDate)
@@ -263,13 +290,13 @@ const BiWeeklyBudget = () => {
       return date;
     });
 
-    const billsByDate = sortedBills.reduce((acc, bill) => {
+    const billsByDate = sortedBillsByDate.reduce((acc, bill) => {
       acc[bill.dueDate] = acc[bill.dueDate] ? [...acc[bill.dueDate], bill] : [bill];
       return acc;
     }, {});
 
     return { start, leadingEmpty, days, billsByDate };
-  }, [today, sortedBills]);
+  }, [today, sortedBillsByDate]);
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -542,7 +569,7 @@ const BiWeeklyBudget = () => {
                 📅 Upcoming Bills (Next 7)
               </h3>
               <div className="space-y-3">
-                {sortedBills.filter(b => b.status === 'Pending').slice(0, 7).map(bill => (
+                {sortedBillsByDate.filter(b => b.status === 'Pending').slice(0, 7).map(bill => (
                   <div key={bill.id} className={`flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg transition-all hover:scale-[1.02] ${
                     darkMode ? 'bg-slate-700/50 hover:bg-slate-700' : 'bg-slate-50 hover:bg-slate-100'
                   } ${bill.daysUntilDue === 0 ? 'border-l-4 border-rose-500' : bill.daysUntilDue <= 3 ? 'border-l-4 border-amber-500' : ''}`}>
@@ -633,97 +660,106 @@ const BiWeeklyBudget = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedBills.map(bill => (
-                    <tr key={bill.id} className={`border-b transition-colors ${
-                      darkMode 
-                        ? 'border-slate-700 hover:bg-slate-700/50' 
-                        : 'border-slate-100 hover:bg-slate-50'
-                    }`}>
-                      <td className="p-3">
-                        <input
-                          type="date"
-                          value={bill.dueDate}
-                          onChange={(e) => updateBill(bill.id, 'dueDate', e.target.value)}
-                          className={`border rounded-lg px-2 py-1 text-sm ${
-                            darkMode 
-                              ? 'bg-slate-700 text-white border-slate-600' 
-                              : 'bg-white text-slate-800 border-slate-300'
-                          }`}
-                        />
-                      </td>
-                      <td className="p-3">
-                        <input
-                          type="text"
-                          value={bill.name}
-                          onChange={(e) => updateBill(bill.id, 'name', e.target.value)}
-                          className={`border rounded-lg px-2 py-1 w-full text-sm ${
-                            darkMode 
-                              ? 'bg-slate-700 text-white border-slate-600' 
-                              : 'bg-white text-slate-800 border-slate-300'
-                          }`}
-                        />
-                      </td>
-                      <td className="p-3">
-                        <input
-                          type="text"
-                          value={bill.category}
-                          onChange={(e) => updateBill(bill.id, 'category', e.target.value)}
-                          className={`border rounded-lg px-2 py-1 w-full text-sm ${
-                            darkMode 
-                              ? 'bg-slate-700 text-white border-slate-600' 
-                              : 'bg-white text-slate-800 border-slate-300'
-                          }`}
-                        />
-                      </td>
-                      <td className="p-3 text-right">
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={bill.amount}
-                          onChange={(e) => updateBill(bill.id, 'amount', Number(e.target.value))}
-                          className={`border rounded-lg px-2 py-1 w-24 text-sm text-right ${
-                            darkMode 
-                              ? 'bg-slate-700 text-white border-slate-600' 
-                              : 'bg-white text-slate-800 border-slate-300'
-                          }`}
-                        />
-                      </td>
-                      <td className="p-3">
-                        <select
-                          value={bill.status}
-                          onChange={(e) => updateBill(bill.id, 'status', e.target.value)}
-                          className={`border rounded-lg px-2 py-1 text-sm ${
-                            darkMode 
-                              ? 'bg-slate-700 text-white border-slate-600' 
-                              : 'bg-white text-slate-800 border-slate-300'
-                          }`}
-                        >
-                          <option>Pending</option>
-                          <option>Paid</option>
-                        </select>
-                      </td>
-                      <td className={`p-3 text-right text-sm font-medium ${
-                        bill.daysUntilDue === 0 ? 'text-rose-500' :
-                        bill.daysUntilDue <= 3 ? 'text-amber-500' :
-                        darkMode ? 'text-slate-300' : 'text-slate-800'
-                      }`}>
-                        {bill.daysUntilDue}
-                      </td>
-                      <td className="p-3 text-right text-sm font-medium text-emerald-600">
-                        {bill.allocationPercent.toFixed(1)}%
-                      </td>
-                      <td className="p-3 text-right text-sm font-semibold text-teal-600">
-                        ${bill.allocatedAmount.toFixed(2)}
-                      </td>
-                      <td className="p-3 text-center">
-                        <button
-                          onClick={() => deleteBill(bill.id)}
-                          className="text-rose-600 hover:text-rose-800 transition"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </td>
-                    </tr>
+                  {sortedBillsByGroup.map(group => (
+                    <React.Fragment key={group.groupName}>
+                      <tr className={`border-b ${darkMode ? 'border-slate-700 bg-slate-700/40' : 'border-slate-200 bg-slate-100'}`}>
+                        <td colSpan={9} className={`px-3 py-2 font-semibold ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                          {group.groupName}
+                        </td>
+                      </tr>
+                      {group.bills.map(bill => (
+                        <tr key={bill.id} className={`border-b transition-colors ${
+                          darkMode 
+                            ? 'border-slate-700 hover:bg-slate-700/50' 
+                            : 'border-slate-100 hover:bg-slate-50'
+                        }`}>
+                          <td className="p-3">
+                            <input
+                              type="date"
+                              value={bill.dueDate}
+                              onChange={(e) => updateBill(bill.id, 'dueDate', e.target.value)}
+                              className={`border rounded-lg px-2 py-1 text-sm ${
+                                darkMode 
+                                  ? 'bg-slate-700 text-white border-slate-600' 
+                                  : 'bg-white text-slate-800 border-slate-300'
+                              }`}
+                            />
+                          </td>
+                          <td className="p-3">
+                            <input
+                              type="text"
+                              value={bill.name}
+                              onChange={(e) => updateBill(bill.id, 'name', e.target.value)}
+                              className={`border rounded-lg px-2 py-1 w-full text-sm ${
+                                darkMode 
+                                  ? 'bg-slate-700 text-white border-slate-600' 
+                                  : 'bg-white text-slate-800 border-slate-300'
+                              }`}
+                            />
+                          </td>
+                          <td className="p-3">
+                            <input
+                              type="text"
+                              value={bill.category}
+                              onChange={(e) => updateBill(bill.id, 'category', e.target.value)}
+                              className={`border rounded-lg px-2 py-1 w-full text-sm ${
+                                darkMode 
+                                  ? 'bg-slate-700 text-white border-slate-600' 
+                                  : 'bg-white text-slate-800 border-slate-300'
+                              }`}
+                            />
+                          </td>
+                          <td className="p-3 text-right">
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={bill.amount}
+                              onChange={(e) => updateBill(bill.id, 'amount', Number(e.target.value))}
+                              className={`border rounded-lg px-2 py-1 w-24 text-sm text-right ${
+                                darkMode 
+                                  ? 'bg-slate-700 text-white border-slate-600' 
+                                  : 'bg-white text-slate-800 border-slate-300'
+                              }`}
+                            />
+                          </td>
+                          <td className="p-3">
+                            <select
+                              value={bill.status}
+                              onChange={(e) => updateBill(bill.id, 'status', e.target.value)}
+                              className={`border rounded-lg px-2 py-1 text-sm ${
+                                darkMode 
+                                  ? 'bg-slate-700 text-white border-slate-600' 
+                                  : 'bg-white text-slate-800 border-slate-300'
+                              }`}
+                            >
+                              <option>Pending</option>
+                              <option>Paid</option>
+                            </select>
+                          </td>
+                          <td className={`p-3 text-right text-sm font-medium ${
+                            bill.daysUntilDue === 0 ? 'text-rose-500' :
+                            bill.daysUntilDue <= 3 ? 'text-amber-500' :
+                            darkMode ? 'text-slate-300' : 'text-slate-800'
+                          }`}>
+                            {bill.daysUntilDue}
+                          </td>
+                          <td className="p-3 text-right text-sm font-medium text-emerald-600">
+                            {bill.allocationPercent.toFixed(1)}%
+                          </td>
+                          <td className="p-3 text-right text-sm font-semibold text-teal-600">
+                            ${bill.allocatedAmount.toFixed(2)}
+                          </td>
+                          <td className="p-3 text-center">
+                            <button
+                              onClick={() => deleteBill(bill.id)}
+                              className="text-rose-600 hover:text-rose-800 transition"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
