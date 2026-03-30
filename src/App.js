@@ -1318,7 +1318,7 @@ const BiWeeklyBudget = () => {
                 <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-cyan-50'}`}>
                   <h4 className="font-semibold mb-2">💳 Credit Utilization</h4>
                   <p className="text-sm">
-                    Keep your credit utilization below 30% for optimal credit scores. High utilization (>80%) can 
+                    Keep your credit utilization below 30% for optimal credit scores. High utilization ({'>'}80%) can 
                     negatively impact your credit rating.
                   </p>
                 </div>
