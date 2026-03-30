@@ -2,24 +2,14 @@ version: "3.8"
 
 services:
   budgets:
-    image: budgets:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/slopessierra/budgets:latest
     ports:
       - "6622:3000"
       - "3001:3001"
-    volumes:
-      - ./src:/app/src
-      - ./public:/app/public
-      - ./package.json:/app/package.json
+    env_file:
+      - .env
     environment:
       NODE_ENV: development
       CHOKIDAR_USEPOLLING: "true"
-      PGHOST: 192
-      PGPORT: 5432
-      PGDATABASE: budgets_app
-      PGUSER: casaos
-      PGPASSWORD: Quantize1t8012!?
     stdin_open: true
     tty: true
