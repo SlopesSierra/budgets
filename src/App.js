@@ -6,6 +6,7 @@ import {
   getDebts, createDebt, updateDebt as apiDebt, deleteDebt as apiDeleteDebt,
   getSetting, updateSetting
 } from './api';
+import Chat from './Chat';
 
 const BiWeeklyBudget = () => {
   const [availableBalance, setAvailableBalance] = useState(0);
@@ -840,6 +841,8 @@ const BiWeeklyBudget = () => {
             </div>
           </div>
         )}
+        {/* Floating Chat */}
+        <Chat darkMode={darkMode} />
       </div>
     </div>
   );
