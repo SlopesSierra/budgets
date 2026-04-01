@@ -11,6 +11,7 @@ app.use('/api/bills', require('./routes/bills'));
 app.use('/api/debts', require('./routes/debts'));
 app.use('/api/settings', require('./routes/settings'));
 
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });

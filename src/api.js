@@ -97,3 +97,29 @@ export const sendMessage = async (messages) => {
   if (!res.ok) throw new Error('Failed to send message');
   return res.json();
 };
+// ─── Chat ────────────────────────────────────────────────
+export const sendMessage = async (message) => {
+  const res = await fetch(`${BASE_URL}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message })
+  });
+  if (!res.ok) throw new Error('Failed to send message');
+  return res.json();
+};
+
+export const getModels = async () => {
+  const res = await fetch(`${BASE_URL}/api/chat/models`);
+  if (!res.ok) throw new Error('Failed to fetch models');
+  return res.json();
+};
+
+export const switchModel = async (model) => {
+  const res = await fetch(`${BASE_URL}/api/chat/model`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model })
+  });
+  if (!res.ok) throw new Error('Failed to switch model');
+  return res.json();
+};
