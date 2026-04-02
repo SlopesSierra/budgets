@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
+// Node v18+ provides global fetch. Fallback to node-fetch if needed.
+const fetchFn = (typeof fetch !== 'undefined') ? fetch : require('node-fetch');
+
 router.post('/', async (req, res) => {
   const { message } = req.body;
 
@@ -57,7 +60,7 @@ ${debts.rows.map(d =>
       ['user', message]
     );
 
-    const ollamaResponse = await fetch(`${ollamaUrl}/api/chat`, {
+    const ollamaResponse = await fetchFn(`${ollamaUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -98,7 +101,7 @@ router.get('/models', async (req, res) => {
     const settings = await db.query('SELECT value FROM settings WHERE key=$1', ['ollama_url']);
     const ollamaUrl = settings.rows[0]?.value || 'http://localhost:11434';
 
-    const response = await fetch(`${ollamaUrl}/api/tags`);
+    const response = await fetchFn(`${ollamaUrl}/api/tags`);
     if (!response.ok) throw new Error('Failed to fetch models');
 
     const data = await response.json();

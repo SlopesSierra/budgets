@@ -10,6 +10,7 @@ app.use(express.json());
 app.use('/api/bills', require('./routes/bills'));
 app.use('/api/debts', require('./routes/debts'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/chat', require('./routes/chat'));
 
 
 // Health check
