@@ -87,16 +87,6 @@ export const updateSetting = async (key, value) => {
   return res.json();
 };
 
-// ─── Chat (future) ────────────────────────────────────────
-export const sendMessage = async (messages) => {
-  const res = await fetch(`${BASE_URL}/api/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages })
-  });
-  if (!res.ok) throw new Error('Failed to send message');
-  return res.json();
-};
 // ─── Chat ────────────────────────────────────────────────
 export const sendMessage = async (message) => {
   const res = await fetch(`${BASE_URL}/api/chat`, {
