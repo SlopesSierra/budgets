@@ -1,5 +1,5 @@
 // Final API client for frontend to interact with backend
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const BASE_URL = '';
 
 // ─── Bills ───────────────────────────────────────────────
 export const getBills = async () => {

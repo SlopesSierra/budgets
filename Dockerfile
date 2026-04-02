@@ -8,8 +8,11 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 3000
+# Build React app
+RUN npm run build
+
+# Expose single port
 EXPOSE 3001
 
-# Start both React and Express together
-CMD ["npm", "run", "dev"]
+# Run only Express server
+CMD ["node", "server/index.js"]
