@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import logo from './assets/budgets-logo.png';
-import { DollarSign, Calendar, TrendingUp, Plus, Trash2, Moon, Sun, AlertCircle, CheckCircle, Clock, CreditCard, Percent, TrendingDown } from 'lucide-react';
+import { DollarSign, Calendar, TrendingUp, Plus, Trash2, Moon, Sun, AlertCircle, Clock, CreditCard, Percent, TrendingDown } from 'lucide-react';
 import {
   getBills, createBill, updateBill as apiBill, deleteBill as apiDeleteBill,
   getDebts, createDebt, updateDebt as apiDebt, deleteDebt as apiDeleteDebt,
