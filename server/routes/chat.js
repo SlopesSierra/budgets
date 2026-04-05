@@ -29,6 +29,7 @@ router.post('/', async (req, res) => {
     const minPayments = debts.rows.reduce((sum, d) => sum + parseFloat(d.minimum_payment), 0);
 
     const context = `
+Use markdown formatting in your responses — bullet points, bold for numbers, and clear sections. Keep responses concise.    
 You are a personal financial assistant. You have access to the user's real financial data shown below.
 Be helpful, specific, and use actual numbers from their data. Keep responses concise and practical.
 

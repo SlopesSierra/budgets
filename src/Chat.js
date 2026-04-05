@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, ChevronDown, Bot, User, Settings } from 'lucide-react';
 import { sendMessage, getModels, switchModel } from './api';
+import ReactMarkdown from 'react-markdown';
 
 const Chat = ({ darkMode }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -173,7 +174,17 @@ const Chat = ({ darkMode }) => {
                       ? 'bg-slate-700 text-slate-100 rounded-tl-sm'
                       : 'bg-slate-100 text-slate-800 rounded-tl-sm'
                 }`}>
-                  {msg.content}
+                  <ReactMarkdown
+                     components={{
+                      p: ({children}) => <p style={{margin: '0 0 8px 0'}}>{children}</p>,
+                      ul: ({children}) => <ul style={{margin: '4px 0', paddingLeft: '16px'}}>{children}</ul>,
+                      ol: ({children}) => <ol style={{margin: '4px 0', paddingLeft: '16px'}}>{children}</ol>,
+                      li: ({children}) => <li style={{margin: '2px 0'}}>{children}</li>,
+                    strong: ({children}) => <strong style={{fontWeight: 500}}>{children}</strong>,
+                  }}
+                >
+                {msg.content}
+                </ReactMarkdown>
                 </div>
               </div>
             ))}
