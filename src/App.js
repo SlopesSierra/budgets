@@ -19,6 +19,11 @@ const BiWeeklyBudget = () => {
   const [error, setError] = useState(null);
 
   const getNextBiWeeklyPayDate = (referenceDateStr) => {
+    const parseDate = (dateStr) => {
+    if (!dateStr) return new Date();
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+    };
     const today = new Date();
     const ref = new Date(referenceDateStr);
     const normalize = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -226,7 +231,7 @@ const BiWeeklyBudget = () => {
   // ─── All your existing computed values unchanged ──────────
   const calculateBillMetrics = bills.map(bill => {
     const daysUntilDue = Math.max(0, Math.ceil(
-      (new Date(bill.dueDate || bill.due_date) - new Date(today)) / (1000 * 60 * 60 * 24)
+      (parseDate(bill.dueDate || bill.due_date) - new Date()) / (1000 * 60 * 60 * 24)
     ));
     return { ...bill, daysUntilDue };
   });
@@ -252,8 +257,7 @@ const BiWeeklyBudget = () => {
     const remaining = availableBalance - totalAllocated;
     const paidCount = bills.filter(b => b.status === 'Paid').length;
     const pendingCount = bills.filter(b => b.status === 'Pending').length;
-    const overdueBills = billsWithAllocation.filter(b => b.status === 'Pending' && new Date(b.dueDate || b.due_date) < new Date(today));
-    const dueSoonBills = billsWithAllocation.filter(b => b.status === 'Pending' && b.daysUntilDue <= 3 && b.daysUntilDue > 0);
+const overdueBills = billsWithAllocation.filter(b => b.status === 'Pending' && parseDate(b.dueDate || b.due_date) < new Date(today));    const dueSoonBills = billsWithAllocation.filter(b => b.status === 'Pending' && b.daysUntilDue <= 3 && b.daysUntilDue > 0);
     return { totalBills, totalAllocated, remaining, paidCount, pendingCount, overdueBills, dueSoonBills };
   })();
 
@@ -267,7 +271,7 @@ const BiWeeklyBudget = () => {
   })();
 
   const sortedBillsByDate = [...billsWithAllocation].sort((a, b) =>
-    new Date(a.dueDate || a.due_date) - new Date(b.dueDate || b.due_date)
+    parseDate(a.dueDate || a.due_date) - parseDate(b.dueDate || b.due_date)
   );
 
   const getBillGroup = (bill) => {
@@ -288,7 +292,7 @@ const BiWeeklyBudget = () => {
       .map(groupName => ({
         groupName,
         bills: groups[groupName].sort((a, b) =>
-          new Date(a.dueDate || a.due_date) - new Date(b.dueDate || b.due_date)
+          parseDate(a.dueDate || a.due_date) - parseDate(b.dueDate || b.due_date)
         )
       }))
       .filter(group => group.bills.length > 0);
@@ -502,7 +506,7 @@ const BiWeeklyBudget = () => {
                     <div className="mb-2 sm:mb-0">
                       <p className={`font-semibold text-lg ${darkMode ? 'text-white' : 'text-slate-800'}`}>{bill.name}</p>
                       <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                        Due: {new Date(bill.dueDate || bill.due_date).toLocaleDateString()}
+                        Due: {parseDate(bill.dueDate || bill.due_date).toLocaleDateString()}
                         <span className={`ml-2 font-medium ${bill.daysUntilDue === 0 ? 'text-rose-500' : bill.daysUntilDue <= 3 ? 'text-amber-500' : darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                           ({bill.daysUntilDue === 0 ? 'Today!' : `${bill.daysUntilDue} days`})
                         </span>
@@ -731,7 +735,7 @@ const BiWeeklyBudget = () => {
                   <div key={`blank-${idx}`} className="h-28 rounded-xl" />
                 ))}
                 {calendarMeta.days.map(day => {
-                  const dateKey = day.toISOString().split('T')[0];
+                  const dateKey = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
                   const dayBills = calendarMeta.billsByDate[dateKey] || [];
                   const isToday = dateKey === today;
                   return (
