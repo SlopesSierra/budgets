@@ -18,12 +18,7 @@ const BiWeeklyBudget = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const getNextBiWeeklyPayDate = (referenceDateStr) => {
-    const parseDate = (dateStr) => {
-    if (!dateStr) return new Date();
-    const [year, month, day] = dateStr.split('-').map(Number);
-    return new Date(year, month - 1, day);
-    };
+const getNextBiWeeklyPayDate = (referenceDateStr) => {
     const today = new Date();
     const ref = new Date(referenceDateStr);
     const normalize = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -35,6 +30,12 @@ const BiWeeklyBudget = () => {
     const cycle = diff <= 0 ? 0 : Math.ceil(diff / msPerBiWeek);
     const next = new Date(refNorm.getTime() + cycle * msPerBiWeek);
     return next.toISOString().split('T')[0];
+  };
+
+  const parseDate = (dateStr) => {
+    if (!dateStr) return new Date();
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
   };
 
   // ─── Load all data from API on mount ─────────────────────
