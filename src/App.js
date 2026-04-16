@@ -54,7 +54,7 @@ const getNextBiWeeklyPayDate = (referenceDateStr) => {
         setBills(billsData.map(b => ({
           ...b,
           amount: parseFloat(b.amount),
-          dueDate: b.due_date
+          dueDate: b.due_date || ''
         })));
 
         setCreditCards(debtsData.map(d => ({
@@ -63,7 +63,7 @@ const getNextBiWeeklyPayDate = (referenceDateStr) => {
           creditLimit: parseFloat(d.credit_limit),
           apr: parseFloat(d.interest_rate),
           minPayment: parseFloat(d.minimum_payment),
-          dueDate: d.due_date
+          dueDate: d.due_date || ''
         })));
 
         setAvailableBalance(balanceSetting ? parseFloat(balanceSetting.value) : 0);
@@ -109,7 +109,7 @@ const getNextBiWeeklyPayDate = (referenceDateStr) => {
       setBills(prev => [...prev, {
         ...newBill,
         amount: parseFloat(newBill.amount),
-        dueDate: newBill.due_date
+        dueDate: newBill.due_date || ''
       }]);
     } catch (err) {
       console.error('Failed to add bill:', err);
@@ -129,13 +129,17 @@ const getNextBiWeeklyPayDate = (referenceDateStr) => {
   const updateBill = async (id, field, value) => {
     const bill = bills.find(b => b.id === id);
     if (!bill) return;
-    const updated = { ...bill, [field]: value };
+    const updated = {
+      ...bill,
+      [field]: value,
+      ...(field === 'dueDate' ? { due_date: value } : {})
+    };
     setBills(prev => prev.map(b => b.id === id ? updated : b));
     try {
       await apiBill(id, {
         name: updated.name,
         amount: updated.amount,
-        due_date: updated.dueDate || updated.due_date,
+        due_date: updated.due_date,
         frequency: updated.frequency,
         category: updated.category,
         status: updated.status,
@@ -556,7 +560,7 @@ const overdueBills = billsWithAllocation.filter(b => b.status === 'Pending' && p
                       {group.bills.map(bill => (
                         <tr key={bill.id} className={`border-b transition-colors ${darkMode ? 'border-slate-700 hover:bg-slate-700/50' : 'border-slate-100 hover:bg-slate-50'}`}>
                           <td className="p-3">
-                            <input type="date" value={bill.dueDate || bill.due_date || ''}
+                            <input type="date" value={bill.due_date || bill.dueDate || ''}
                               onChange={(e) => updateBill(bill.id, 'dueDate', e.target.value)}
                               className={`border rounded-lg px-2 py-1 text-sm ${darkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-white text-slate-800 border-slate-300'}`} />
                           </td>
