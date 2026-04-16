@@ -323,7 +323,9 @@ const overdueBills = billsWithAllocation.filter(b => b.status === 'Pending' && p
       return date;
     });
     const billsByDate = sortedBillsByDate.reduce((acc, bill) => {
-      const key = bill.dueDate || bill.due_date;
+      const raw = bill.dueDate || bill.due_date;
+      if (!raw) return acc;
+      const key = typeof raw === 'string' ? raw.split('T')[0] : `${raw.getFullYear()}-${String(raw.getMonth()+1).padStart(2,'0')}-${String(raw.getDate()).padStart(2,'0')}`;
       acc[key] = acc[key] ? [...acc[key], bill] : [bill];
       return acc;
     }, {});
