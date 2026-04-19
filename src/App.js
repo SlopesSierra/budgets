@@ -53,8 +53,7 @@ const getNextBiWeeklyPayDate = (referenceDateStr) => {
 
         setBills(billsData.map(b => ({
           ...b,
-          amount: parseFloat(b.amount),
-          dueDate: b.due_date || ''
+          amount: parseFloat(b.amount)
         })));
 
         setCreditCards(debtsData.map(d => ({
@@ -131,8 +130,7 @@ const getNextBiWeeklyPayDate = (referenceDateStr) => {
     if (!bill) return;
     const updated = {
       ...bill,
-      [field]: value,
-      ...(field === 'dueDate' ? { due_date: value } : {})
+      [field]: value
     };
     setBills(prev => prev.map(b => b.id === id ? updated : b));
     try {
@@ -560,8 +558,8 @@ const overdueBills = billsWithAllocation.filter(b => b.status === 'Pending' && p
                       {group.bills.map(bill => (
                         <tr key={bill.id} className={`border-b transition-colors ${darkMode ? 'border-slate-700 hover:bg-slate-700/50' : 'border-slate-100 hover:bg-slate-50'}`}>
                           <td className="p-3">
-                            <input type="date" value={bill.due_date || bill.dueDate || ''}
-                              onChange={(e) => updateBill(bill.id, 'dueDate', e.target.value)}
+                            <input type="date" value={bill.due_date || ''}
+                              onChange={(e) => updateBill(bill.id, 'due_date', e.target.value)}
                               className={`border rounded-lg px-2 py-1 text-sm ${darkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-white text-slate-800 border-slate-300'}`} />
                           </td>
                           <td className="p-3">
